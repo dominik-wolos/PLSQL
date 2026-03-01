@@ -122,5 +122,25 @@ end ;
 test:
 insert into przedmioty (id_przedmiot, nazwa_przedmiot) values (25, 'Applied data science') ; 
 
-
+Zad. 211 - PM
+declare
+	eStudNumGT exception ; 
+	cursor cEgzaminy is select g.id_egzaminator, nazwisko, imie, data_egzamin, count(distinct id_student) StudNum
+  											from egzaminatorzy g inner join egzaminy e
+  											on g.id_egzaminator = e.id_egzaminator
+                        group by g.id_egzaminator, nazwisko, imie, data_egzamin 
+                        order by 1, 4;
+begin
+	for vc1 in cEgzaminy loop
+  	begin
+  		if vc1.StudNum > 5 then
+      		raise eStudNumGT ;
+      end if ;
+    exception
+    	when eStudNumGT then
+      		DBMS_OUTPUT.PUT_LINE(VC1.id_egzaminator || ' ' || VC1.NAZWISKO || ' ' || VC1.IMIE );
+    end ; 
+	end loop ;
+end ; 
+                            
 
