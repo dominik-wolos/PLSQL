@@ -121,7 +121,7 @@ end ;
 
 test:
 insert into przedmioty (id_przedmiot, nazwa_przedmiot) values (25, 'Applied data science') ; 
-
+	
 Zad. 211 - PM
 declare
 	eStudNumGT exception ; 
@@ -138,9 +138,9 @@ begin
       end if ;
     exception
     	when eStudNumGT then
-      		DBMS_OUTPUT.PUT_LINE(VC1.id_egzaminator || ' ' || VC1.NAZWISKO || ' ' || VC1.IMIE );
+      		DBMS_OUTPUT.PUT_LINE(VC1.id_egzaminator || ' ' || VC1.NAZWISKO || ' ' || VC1.IMIE || ' - ' || vc1.data_egzamin);
     end ; 
 	end loop ;
 end ; 
                             
-
+# DO PRZECZYTANIA 213
