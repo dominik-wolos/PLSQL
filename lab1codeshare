@@ -1,0 +1,126 @@
+========================== 2025-03-01 ===============================
+Zad. 190 PM
+declare
+	cursor c1 is select count(*) ExamNum from egzaminy group by id_przedmiot order by 1 desc ;
+  cursor c2 (pExamNum number) is select nazwa_przedmiot from przedmioty p inner join egzaminy e
+  																on p.id_przedmiot = e.id_przedmiot
+                                  group by nazwa_przedmiot
+                                  having count(*) = pExamNum ;
+begin
+	for vc1 in c1 loop
+  	exit when c1%rowcount > 3 ;
+  	--dbms_output.put_line(vc1.ExamNum) ; 
+    for vc2 in c2(vc1.ExamNum) loop
+    		dbms_output.put_line(vc2.nazwa_przedmiot || ' (' || vc1.ExamNum || ')') ; 
+    end loop ;
+	end loop ; 
+end ; 
+
+
+Zad. 191 - Jakub Woźniak
+
+DECLARE
+    vdata DATE;
+    CURSOR cegzaminy IS
+      SELECT DISTINCT data_egzamin
+      FROM   egzaminy
+      ORDER  BY data_egzamin DESC ;
+    cursor cegzaminatorzy (pDate date) is select DISTINCT egz.Imie, egz.Nazwisko, egz.ID_EGZAMINATOR 
+                                        from EGZAMINATORZY egz
+                                            INNER JOIN EGZAMINY e ON e.ID_EGZAMINATOR = egz.ID_EGZAMINATOR
+                                        where e.DATA_EGZAMIN = pDate ;
+BEGIN
+    OPEN cegzaminy;
+
+    IF cegzaminy%isopen THEN
+      FOR i IN 1..3 LOOP
+          FETCH cegzaminy INTO vdata;
+
+          EXIT WHEN cegzaminy%NOTFOUND;
+
+          for cegzaminator in cegzaminatorzy(vdata) loop
+            DBMS_OUTPUT.PUT_LINE(vdata || ' ' || cegzaminator.imie || ' ' || cegzaminator.nazwisko || ' ' || cegzaminator.ID_EGZAMINATOR);
+          end loop;
+      END LOOP;
+
+      CLOSE cegzaminy;
+    END IF;
+END; 
+
+Zad. 191 - PM - ver. 2
+
+DECLARE
+    vdata DATE;
+    CURSOR cegzaminy IS
+      SELECT DISTINCT data_egzamin
+      FROM   egzaminy
+      ORDER  BY data_egzamin DESC 
+      FETCH FIRST 3 ROWS ONLY ;
+    cursor cegzaminatorzy (pDate date) is select DISTINCT egz.Imie, egz.Nazwisko, egz.ID_EGZAMINATOR 
+                                        from EGZAMINATORZY egz
+                                            INNER JOIN EGZAMINY e ON e.ID_EGZAMINATOR = egz.ID_EGZAMINATOR
+                                        where e.DATA_EGZAMIN = pDate ;
+BEGIN
+    FOR vc1 in cegzaminy loop
+    		
+    		for cegzaminator in cegzaminatorzy(vc1.data_egzamin) loop
+            DBMS_OUTPUT.PUT_LINE(vc1.data_egzamin || ' ' || cegzaminator.imie || ' ' || cegzaminator.nazwisko || ' ' || cegzaminator.ID_EGZAMINATOR);
+          end loop;
+      END LOOP ;
+END; 
+
+
+Zad. 192
+
+DECLARE
+	CURSOR Cprzedmioty IS
+    SELECT DISTINCT
+        P.ID_PRZEDMIOT, NAZWA_PRZEDMIOT
+    FROM
+        EGZAMINY E INNER JOIN PRZEDMIOTY P
+  	ON P.ID_PRZEDMIOT = E.ID_PRZEDMIOT ;
+  
+  cursor datyPrzedmiot(przedmiot INT) is 
+      SELECT distinct e.DATA_EGZAMIN FROM EGZAMINY e WHERE e.ID_PRZEDMIOT = przedmiot 
+          ORDER  BY data_egzamin DESC 
+          FETCH FIRST 2 ROWS ONLY ;
+          
+      cursor cstudent (p_id_przedmiot INT, p_data DATE) is 
+        select distinct s.id_student, s.IMIE, s.NAZWISKO from studenci s 
+        inner join EGZAMINY ex on ex.id_student= s.ID_STUDENT
+            where ex.id_przedmiot = p_id_przedmiot
+            and ex.data_egzamin = p_data
+            order by s.nazwisko, s.imie;
+BEGIN
+	FOR VC1 IN Cprzedmioty LOOP
+  	DBMS_OUTPUT.PUT_LINE(VC1.NAZWA_PRZEDMIOT) ; 
+    for vc2 in datyPrzedmiot(vc1.id_przedmiot) loop
+    	DBMS_OUTPUT.PUT_LINE(to_char(VC2.data_egzamin, 'yyyy-mm-dd')) ; 
+      
+                  FOR VC3 IN cstudent(VC1.ID_PRZEDMIOT, VC2.DATA_EGZAMIN) LOOP
+                DBMS_OUTPUT.PUT_LINE(VC3.id_student || ' ' || VC3.NAZWISKO || ' ' || VC3.IMIE );
+            END LOOP; 
+    end loop;
+  END LOOP ; 
+END ; 
+
+Zad. 210 - PM
+declare
+	cursor cPrzedmioty is select id_przedmiot, nazwa_przedmiot from przedmioty order by 2 ;
+	x number ; 
+begin
+	for vc1 in cPrzedmioty loop
+  	begin
+  		select distinct 1 into x from egzaminy where id_przedmiot = vc1.id_przedmiot ; 
+    exception
+    	when no_data_found then 
+      		dbms_output.put_line(vc1.nazwa_przedmiot) ; 
+    end ;
+	end loop ; 
+end ; 
+
+test:
+insert into przedmioty (id_przedmiot, nazwa_przedmiot) values (25, 'Applied data science') ; 
+
+
+
