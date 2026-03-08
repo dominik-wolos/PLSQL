@@ -28,8 +28,8 @@ DECLARE
         examDateInFuture EXCEPTION;
     BEGIN
         SELECT x.DATA_EGZAMIN INTO lastExamDate FROM EGZAMINY x
-            WHERE x.ID_STUDENT = studentId
-            ORDER BY x.DATA_EGZAMIN DESC
+        WHERE x.ID_STUDENT = studentId
+        ORDER BY x.DATA_EGZAMIN DESC
             FETCH FIRST 1 ROWS ONLY
         ;
 
@@ -59,16 +59,17 @@ BEGIN
     FOR student IN cStudent LOOP
             IF checkStudentPassedExamsFromAllSubjects(student.student, subjectCount) THEN
                 lastExamDate := getLastExamDate(student.student);
-                DBMS_OUTPUT.PUT_LINE(student.student || ' ' || ' HAS PASSED ALL SUBJECTS AT ' || ' ' || lastExamDate);
+                DBMS_OUTPUT.PUT_LINE(student.student || ' has passed all subjects at '|| lastExamDate);
                 setStudentData(student.student, lastExamDate, IsUpdated);
 
                 IF isUpdated THEN
-                    DBMS_OUTPUT.PUT_LINE('Student' || student.student || ' ' || ' - data has been updated ');
+                    DBMS_OUTPUT.PUT_LINE('Student' || student.student || ' - data has been updated ');
                 ELSE
-                    DBMS_OUTPUT.PUT_LINE('Student' || student.student || ' ' || ' - data update failed');
+                    DBMS_OUTPUT.PUT_LINE('Student' || student.student || ' - data update failed');
                 END IF;
             ELSE
-                DBMS_OUTPUT.PUT_LINE(student.student || ' ' || ' HAS NOT PASSED ALL SUBJECTS');
+                DBMS_OUTPUT.PUT_LINE(student.student || ' HAS NOT PASSED ALL SUBJECTS');
             END IF;
         END LOOP;
 end;
+
