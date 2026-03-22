@@ -459,8 +459,9 @@ BEGIN
         
         for przedmiot in cPrzedmioty(student.id) loop
             colPrzedmioty.extend;
-            rPrzedmiot.nazwaPrzedmiot := przedmiot.NazwaPrzedmiot;
-            rPrzedmiot.dataEgzaminu := przedmiot.dataEgzaminu;
+            -- rPrzedmiot.nazwaPrzedmiot := przedmiot.NazwaPrzedmiot;
+            -- rPrzedmiot.dataEgzaminu := przedmiot.dataEgzaminu;
+            rPrzedmiot := tRec_Przedmiot(przedmiot.NazwaPrzedmiot, przedmiot.dataEgzaminu);
 
             colPrzedmioty(colPrzedmioty.last) := rPrzedmiot;
         end loop;
