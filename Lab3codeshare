@@ -1,0 +1,487 @@
+========================== 2025-03-01 ===============================
+Zad. 190 PM
+declare
+	cursor c1 is select count(*) ExamNum from egzaminy group by id_przedmiot order by 1 desc ;
+  cursor c2 (pExamNum number) is select nazwa_przedmiot from przedmioty p inner join egzaminy e
+  																on p.id_przedmiot = e.id_przedmiot
+                                  group by nazwa_przedmiot
+                                  having count(*) = pExamNum ;
+begin
+	for vc1 in c1 loop
+  	exit when c1%rowcount > 3 ;
+  	--dbms_output.put_line(vc1.ExamNum) ; 
+    for vc2 in c2(vc1.ExamNum) loop
+    		dbms_output.put_line(vc2.nazwa_przedmiot || ' (' || vc1.ExamNum || ')') ; 
+    end loop ;
+	end loop ; 
+end ; 
+
+
+Zad. 191 - Jakub Woźniak
+
+DECLARE
+    vdata DATE;
+    CURSOR cegzaminy IS
+      SELECT DISTINCT data_egzamin
+      FROM   egzaminy
+      ORDER  BY data_egzamin DESC ;
+    cursor cegzaminatorzy (pDate date) is select DISTINCT egz.Imie, egz.Nazwisko, egz.ID_EGZAMINATOR 
+                                        from EGZAMINATORZY egz
+                                            INNER JOIN EGZAMINY e ON e.ID_EGZAMINATOR = egz.ID_EGZAMINATOR
+                                        where e.DATA_EGZAMIN = pDate ;
+BEGIN
+    OPEN cegzaminy;
+
+    IF cegzaminy%isopen THEN
+      FOR i IN 1..3 LOOP
+          FETCH cegzaminy INTO vdata;
+
+          EXIT WHEN cegzaminy%NOTFOUND;
+
+          for cegzaminator in cegzaminatorzy(vdata) loop
+            DBMS_OUTPUT.PUT_LINE(vdata || ' ' || cegzaminator.imie || ' ' || cegzaminator.nazwisko || ' ' || cegzaminator.ID_EGZAMINATOR);
+          end loop;
+      END LOOP;
+
+      CLOSE cegzaminy;
+    END IF;
+END; 
+
+Zad. 191 - PM - ver. 2
+
+DECLARE
+    vdata DATE;
+    CURSOR cegzaminy IS
+      SELECT DISTINCT data_egzamin
+      FROM   egzaminy
+      ORDER  BY data_egzamin DESC 
+      FETCH FIRST 3 ROWS ONLY ;
+    cursor cegzaminatorzy (pDate date) is select DISTINCT egz.Imie, egz.Nazwisko, egz.ID_EGZAMINATOR 
+                                        from EGZAMINATORZY egz
+                                            INNER JOIN EGZAMINY e ON e.ID_EGZAMINATOR = egz.ID_EGZAMINATOR
+                                        where e.DATA_EGZAMIN = pDate ;
+BEGIN
+    FOR vc1 in cegzaminy loop
+    		
+    		for cegzaminator in cegzaminatorzy(vc1.data_egzamin) loop
+            DBMS_OUTPUT.PUT_LINE(vc1.data_egzamin || ' ' || cegzaminator.imie || ' ' || cegzaminator.nazwisko || ' ' || cegzaminator.ID_EGZAMINATOR);
+          end loop;
+      END LOOP ;
+END; 
+
+
+Zad. 192
+
+DECLARE
+	CURSOR Cprzedmioty IS
+    SELECT DISTINCT
+        P.ID_PRZEDMIOT, NAZWA_PRZEDMIOT
+    FROM
+        EGZAMINY E INNER JOIN PRZEDMIOTY P
+  	ON P.ID_PRZEDMIOT = E.ID_PRZEDMIOT ;
+  
+  cursor datyPrzedmiot(przedmiot INT) is 
+      SELECT distinct e.DATA_EGZAMIN FROM EGZAMINY e WHERE e.ID_PRZEDMIOT = przedmiot 
+          ORDER  BY data_egzamin DESC 
+          FETCH FIRST 2 ROWS ONLY ;
+          
+      cursor cstudent (p_id_przedmiot INT, p_data DATE) is 
+        select distinct s.id_student, s.IMIE, s.NAZWISKO from studenci s 
+        inner join EGZAMINY ex on ex.id_student= s.ID_STUDENT
+            where ex.id_przedmiot = p_id_przedmiot
+            and ex.data_egzamin = p_data
+            order by s.nazwisko, s.imie;
+BEGIN
+	FOR VC1 IN Cprzedmioty LOOP
+  	DBMS_OUTPUT.PUT_LINE(VC1.NAZWA_PRZEDMIOT) ; 
+    for vc2 in datyPrzedmiot(vc1.id_przedmiot) loop
+    	DBMS_OUTPUT.PUT_LINE(to_char(VC2.data_egzamin, 'yyyy-mm-dd')) ; 
+      
+                  FOR VC3 IN cstudent(VC1.ID_PRZEDMIOT, VC2.DATA_EGZAMIN) LOOP
+                DBMS_OUTPUT.PUT_LINE(VC3.id_student || ' ' || VC3.NAZWISKO || ' ' || VC3.IMIE );
+            END LOOP; 
+    end loop;
+  END LOOP ; 
+END ; 
+
+Zad. 210 - PM
+declare
+	cursor cPrzedmioty is select id_przedmiot, nazwa_przedmiot from przedmioty order by 2 ;
+	x number ; 
+begin
+	for vc1 in cPrzedmioty loop
+  	begin
+  		select distinct 1 into x from egzaminy where id_przedmiot = vc1.id_przedmiot ; 
+    exception
+    	when no_data_found then 
+      		dbms_output.put_line(vc1.nazwa_przedmiot) ; 
+    end ;
+	end loop ; 
+end ; 
+
+test:
+insert into przedmioty (id_przedmiot, nazwa_przedmiot) values (25, 'Applied data science') ; 
+	
+Zad. 211 - PM
+declare
+	eStudNumGT exception ; 
+	cursor cEgzaminy is select g.id_egzaminator, nazwisko, imie, data_egzamin, count(distinct id_student) StudNum
+  											from egzaminatorzy g inner join egzaminy e
+  											on g.id_egzaminator = e.id_egzaminator
+                        group by g.id_egzaminator, nazwisko, imie, data_egzamin 
+                        order by 1, 4;
+begin
+	for vc1 in cEgzaminy loop
+  	begin
+  		if vc1.StudNum > 5 then
+      		raise eStudNumGT ;
+      end if ;
+    exception
+    	when eStudNumGT then
+      		DBMS_OUTPUT.PUT_LINE(VC1.id_egzaminator || ' ' || VC1.NAZWISKO || ' ' || VC1.IMIE || ' - ' || vc1.data_egzamin);
+    end ; 
+	end loop ;
+end ; 
+                            
+=========================== 2026-03-08 ============================================
+Zad. 216 (268)
+
+Dominik Wołos
+
+DECLARE
+    subjectCount INT;
+    lastExamDate DATE;
+    IsUpdated BOOLEAN;
+    CURSOR cStudent IS
+        SELECT s.ID_STUDENT as student FROM STUDENCI s;
+
+    FUNCTION getSubjectsCount RETURN INT IS
+        subjectsCount INT;
+    BEGIN
+        SELECT COUNT(*) INTO subjectsCount FROM PRZEDMIOTY;
+        RETURN subjectsCount;
+    END getSubjectsCount;
+
+    FUNCTION checkStudentPassedExamsFromAllSubjects(studentId INT, subjectCount INT) RETURN BOOLEAN IS
+        studentExamsPassedCount INT;
+    BEGIN
+        SELECT COUNT(DISTINCT(EGZAMINY.ID_PRZEDMIOT)) INTO studentExamsPassedCount FROM EGZAMINY
+        WHERE ID_STUDENT = studentId AND ZDAL = 'T'
+        GROUP BY ID_STUDENT
+        ;
+        RETURN studentExamsPassedCount = subjectCount;
+    END checkStudentPassedExamsFromAllSubjects;
+
+    FUNCTION getLastExamDate(studentId INT) RETURN DATE IS
+        lastExamDate DATE;
+        examDateInFuture EXCEPTION;
+    BEGIN
+        SELECT x.DATA_EGZAMIN INTO lastExamDate FROM EGZAMINY x
+            WHERE x.ID_STUDENT = studentId
+            ORDER BY x.DATA_EGZAMIN DESC
+            FETCH FIRST 1 ROWS ONLY
+        ;
+
+        IF lastExamDate > SYSDATE THEN
+            raise examDateInFuture;
+        END IF;
+
+        RETURN lastExamDate;
+    EXCEPTION
+        WHEN examDateInFuture THEN
+            DBMS_OUTPUT.PUT_LINE('Student ' || studentId || ' has last exam date in the future');
+            RETURN SYSDATE;
+    END getLastExamDate;
+
+    PROCEDURE setStudentData(studentId INT, lastExamDate DATE, IsUpdated OUT BOOLEAN) IS
+    BEGIN
+        UPDATE STUDENCI SET NR_ECDL = studentId, DATA_ECDL = lastExamDate WHERE ID_STUDENT = studentId;
+        CUMMIT;
+        IsUpdated := TRUE ;
+    exception
+        WHEN Others THEN
+            IsUpdated := FALSE ;
+    end setStudentData;
+
+BEGIN
+    subjectCount := getSubjectsCount();
+    FOR student IN cStudent LOOP
+            IF checkStudentPassedExamsFromAllSubjects(student.student, subjectCount) THEN
+                lastExamDate := getLastExamDate(student.student);
+                DBMS_OUTPUT.PUT_LINE(student.student || ' has passed all subjects at '|| lastExamDate);
+                setStudentData(student.student, lastExamDate, IsUpdated);
+
+                IF isUpdated THEN
+                    DBMS_OUTPUT.PUT_LINE('Student' || student.student || ' - data has been updated ');
+                ELSE
+                    DBMS_OUTPUT.PUT_LINE('Student' || student.student || ' - data update failed');
+                END IF;
+            ELSE
+                DBMS_OUTPUT.PUT_LINE(student.student || ' HAS NOT PASSED ALL SUBJECTS');e
+            END IF;
+        END LOOP;
+end;
+
+-------------- PAKIET -------------
+
+Dominik Wołos
+
+CREATE or replace PACKAGE validate_graduation IS
+    FUNCTION getSubjectsCount RETURN INT;
+    FUNCTION checkStudentPassedExamsFromAllSubjects(studentId INT, subjectCount INT) RETURN BOOLEAN;
+    FUNCTION getLastExamDate(studentId INT) RETURN DATE;
+END validate_graduation ;
+
+CREATE OR REPLACE PACKAGE BODY validate_graduation IS
+    FUNCTION getSubjectsCount RETURN INT IS
+        subjectsCount INT;
+    BEGIN
+        SELECT COUNT(*) INTO subjectsCount FROM PRZEDMIOTY;
+        RETURN subjectsCount;
+    END getSubjectsCount;
+
+    FUNCTION checkStudentPassedExamsFromAllSubjects(studentId INT, subjectCount INT) RETURN BOOLEAN IS
+        studentExamsPassedCount INT;
+    BEGIN
+        SELECT COUNT(DISTINCT(EGZAMINY.ID_PRZEDMIOT)) INTO studentExamsPassedCount FROM EGZAMINY
+        WHERE ID_STUDENT = studentId AND ZDAL = 'T'
+        GROUP BY ID_STUDENT
+        ;
+        RETURN studentExamsPassedCount = subjectCount;
+    END checkStudentPassedExamsFromAllSubjects;
+
+    FUNCTION getLastExamDate(studentId INT) RETURN DATE IS
+        lastExamDate DATE;
+        examDateInFuture EXCEPTION;
+    BEGIN
+        SELECT x.DATA_EGZAMIN INTO lastExamDate FROM EGZAMINY x
+        WHERE x.ID_STUDENT = studentId
+        ORDER BY x.DATA_EGZAMIN DESC
+            FETCH FIRST 1 ROWS ONLY
+        ;
+
+        IF lastExamDate > SYSDATE THEN
+            raise examDateInFuture;
+        END IF;
+
+        RETURN lastExamDate;
+    EXCEPTION
+        WHEN examDateInFuture THEN
+            DBMS_OUTPUT.PUT_LINE('Student ' || studentId || ' has last exam date in the future');
+            RETURN SYSDATE;
+    END getLastExamDate;
+END validate_graduation;
+
+CREATE or replace PROCEDURE setStudentData(studentId INT, lastExamDate DATE, IsUpdated OUT BOOLEAN) IS
+BEGIN
+    UPDATE STUDENCI SET NR_ECDL = studentId, DATA_ECDL = lastExamDate WHERE ID_STUDENT = studentId;
+    COMMIT;
+    IsUpdated := TRUE ;
+exception
+    WHEN Others THEN
+        IsUpdated := FALSE ;
+end setStudentData;
+
+DECLARE
+    subjectCount INT;
+    lastExamDate DATE;
+    IsUpdated BOOLEAN;
+    CURSOR cStudent IS
+        SELECT s.ID_STUDENT as student FROM STUDENCI s;
+
+BEGIN
+    subjectCount := validate_graduation.getSubjectsCount();
+    FOR student IN cStudent LOOP
+            IF validate_graduation.checkStudentPassedExamsFromAllSubjects(student.student, subjectCount) THEN
+                lastExamDate := validate_graduation.getLastExamDate(student.student);
+                DBMS_OUTPUT.PUT_LINE(student.student || ' has passed all subjects at '|| lastExamDate);
+                setStudentData(student.student, lastExamDate, IsUpdated);
+
+                IF isUpdated THEN
+                    DBMS_OUTPUT.PUT_LINE('Student' || student.student || ' - data has been updated ');
+                ELSE
+                    DBMS_OUTPUT.PUT_LINE('Student' || student.student || ' - data update failed');
+                END IF;
+            ELSE
+                DBMS_OUTPUT.PUT_LINE(student.student || ' HAS NOT PASSED ALL SUBJECTS');
+            END IF;
+        END LOOP;
+end;
+
+Zad. 269
+
+Dominik Wołos
+
+CREATE OR REPLACE TRIGGER examCountTrigger
+    BEFORE
+        INSERT
+    ON EGZAMINY
+    FOR EACH ROW
+DECLARE
+    studentId NUMBER;
+    subjectId NUMBER;
+    tooManyExams EXCEPTION;
+    PRAGMA EXCEPTION_INIT (tooManyExams, -20001);
+    PROCEDURE verifyExamCount(studentId NUMBER, subjectId NUMBER) IS
+        examCount NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO examCount FROM EGZAMINY x WHERE x.ID_STUDENT = studentId AND x.ID_PRZEDMIOT = subjectId;
+
+        IF (examCount < 3) THEN
+            RETURN;
+        END IF;
+
+        raise_application_error(-20001, 'Student ' || studentId || ' already took 3 exams from this subject');
+    END verifyExamCount;
+BEGIN
+    CASE
+        WHEN INSERTING THEN
+            studentId := :NEW.ID_STUDENT;
+            subjectId := :NEW.ID_PRZEDMIOT;
+            verifyExamCount(studentId, subjectId);
+        END CASE;
+END;
+
+DECLARE
+    studentId NUMBER := 0000001;
+    tooManyExams EXCEPTION;
+    PRAGMA EXCEPTION_INIT (tooManyExams, -20001);
+BEGIN
+    INSERT INTO EGZAMINY (
+        ID_EGZAMIN,
+        ID_STUDENT,
+        ID_PRZEDMIOT,
+        ID_EGZAMINATOR,
+        DATA_EGZAMIN,
+        ID_OSRODEK,
+        ZDAL,
+        PUNKTY
+    )
+    VALUES (
+        1000004,
+        studentId,
+        1,
+        '0003',
+        DATE '2012-06-14',
+        7,
+        'N',
+        2.91
+    );
+    COMMIT;
+EXCEPTION
+    WHEN tooManyExams THEN
+        DBMS_OUTPUT.PUT_LINE('Student ' || studentId ||' already took 3 exams from this subject');
+END;      
+============== Laboratorium 22.03.2026 ===============
+Zad. 230
+
+declare
+	type tRec_Osrodek is record (id number, nazwa varchar2(50)) ;
+	type tCol_Osrodki is table of tRec_Osrodek ;
+	colOsrodki tCol_Osrodki := tCol_Osrodki() ;
+  cursor c1 is select id_osrodek, nazwa_osrodek from osrodki order by 2 ;
+begin
+	for vc1 in c1 loop
+  	ColOsrodki.extend ;
+  	ColOsrodki(c1%rowcount) := vc1 ; 
+  end loop ; 
+  for i in 1..ColOsrodki.count loop
+  	dbms_output.put_line(ColOsrodki(i).nazwa || ' (' || ColOsrodki(i).id || ')') ; 
+  end loop ; 
+end ; 
+
+Zad. 231
+
+-- https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/collection-methods.html#GUID-E43509F6-5044-4B17-9516-2EB4BDDD5173__CIHJFHJE
+INSERT INTO Osrodki (id_osrodek, nazwa_osrodek) values (33, 'Pentagon') ; 
+
+declare
+	type tRec_Osrodek is record (id number, nazwa varchar2(50)) ;
+	type tCol_Osrodki is table of tRec_Osrodek ;
+	colOsrodki tCol_Osrodki := tCol_Osrodki() ;
+  cursor c1 is select id_osrodek, nazwa_osrodek from osrodki order by 2 ;
+  x number ; 
+begin
+	for vc1 in c1 loop
+  	ColOsrodki.extend ;
+  	ColOsrodki(c1%rowcount) := vc1 ; 
+  end loop ; 
+  for i in 1..ColOsrodki.count loop
+  	dbms_output.put_line(ColOsrodki(i).nazwa || ' (' || ColOsrodki(i).id || ')') ; 
+  end loop ; 
+  for i in 1..ColOsrodki.count loop
+  	begin 
+    	select distinct 1 into x from egzaminy where id_osrodek = ColOsrodki(i).id  ;
+    exception
+    	when no_data_found then
+      		ColOsrodki.delete(i) ;
+    end ; 
+  end loop ; 
+  for i in 1..ColOsrodki.count loop
+  	if ColOsrodki.exists(i) then 
+  		dbms_output.put_line(ColOsrodki(i).nazwa || ' (' || ColOsrodki(i).id || ')') ; 
+    end if ;
+  end loop ; 
+  
+end ; 
+
+Zad. 232 - Dominik Wołos
+
+DECLARE
+    type tRec_Przedmiot is record (nazwaPrzedmiot varchar2(50), dataEgzaminu date);
+    rPrzedmiot tRec_Przedmiot;
+
+    type tCol_Przedmioty is table of tRec_Przedmiot;
+    colPrzedmioty tCol_Przedmioty := tCol_Przedmioty();
+
+    type tRec_Student is record (id number, fName varchar2(50), lName varchar2(50), przedmioty tCol_Przedmioty);
+    rStudent tRec_Student;
+
+    type tCol_Studenci is table of tRec_Student;
+    colStudenci tCol_Studenci := tCol_Studenci();
+
+    CURSOR cStudenci is SELECT ID_STUDENT as id, IMIE as fName, NAZWISKO as lName FROM STUDENCI;
+    CURSOR cPrzedmioty(id number) is
+        SELECT PRZEDMIOTY.NAZWA_PRZEDMIOT AS NazwaPrzedmiot,
+               MIN(EGZAMINY.DATA_EGZAMIN)  AS dataEgzaminu
+            FROM PRZEDMIOTY
+            INNER JOIN EGZAMINY ON PRZEDMIOTY.ID_PRZEDMIOT = EGZAMINY.ID_PRZEDMIOT
+            WHERE EGZAMINY.ID_STUDENT = id
+            AND EGZAMINY.ZDAL='T'
+            GROUP BY PRZEDMIOTY.NAZWA_PRZEDMIOT
+    ;
+BEGIN
+    for student in cStudenci loop
+        colStudenci.extend;
+        rStudent.id := student.id;
+				
+        colPrzedmioty := tCol_Przedmioty(); --czyscimy kolekcje
+        
+        for przedmiot in cPrzedmioty(student.id) loop
+            colPrzedmioty.extend;
+            rPrzedmiot.nazwaPrzedmiot := przedmiot.NazwaPrzedmiot;
+            rPrzedmiot.dataEgzaminu := przedmiot.dataEgzaminu;
+
+            colPrzedmioty(colPrzedmioty.last) := rPrzedmiot;
+        end loop;
+
+        rStudent.fName := student.fName;
+        rStudent.lName := student.lName;
+        rStudent.przedmioty := colPrzedmioty;
+        colStudenci(colStudenci.last) := rStudent;
+    end loop;
+
+    for i in 1..colStudenci.count loop
+            rStudent := colStudenci(i);
+            dbms_output.put_line('============= START Student ' || rStudent.id || '===============');
+                dbms_output.put_line(rStudent.id || ' ' || rStudent.fName || ' ' || rStudent.lName);
+                for j in 1..rStudent.przedmioty.count loop
+                        rPrzedmiot := rStudent.przedmioty(j);
+                        dbms_output.put_line('Przedmiot: ' || rPrzedmiot.nazwaPrzedmiot || ' ' ||', Data zdanego egzaminu: ' ||rPrzedmiot.dataEgzaminu);
+                    end loop ;
+            dbms_output.put_line('============= END Student' || rStudent.id || '===============');
+            end loop;
+end;
+
+
+
